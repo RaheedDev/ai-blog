@@ -10,6 +10,7 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    unoptimized: true, // Allow unoptimized images for better compatibility
   },
 }
 

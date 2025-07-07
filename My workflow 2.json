@@ -1,0 +1,332 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        -180
+      ],
+      "id": "f7414972-b63f-4427-a0ba-acdb3ea6ec4e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://trends.google.com/trending/rss?geo=IN",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -980,
+        -180
+      ],
+      "id": "99ff172b-6e41-4a9d-b9af-01184a2205d1",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (!items || items.length === 0) {\n  return [{ json: { title: \"No topics found\", description: \"Default description\" } }];\n}\n\nconst top5 = items.slice(0, 5);\nconst chosen = top5[Math.floor(Math.random() * top5.length)];\n\nconst title = chosen.json.title || \"Trending Topic\";\nconst description = chosen.json.contentSnippet || chosen.json.content || `Trending topic: ${title}` || \"Popular topic from Google Trends India\";\n\n// Clean and enhance the topic\nconst cleanTitle = title.replace(/[^a-zA-Z0-9\\s-]/g, '').trim();\nconst enhancedDescription = description.length > 200 ? description.substring(0, 200) + '...' : description;\n\nreturn [{ \n  json: { \n    title: cleanTitle, \n    description: enhancedDescription,\n    link: chosen.json.link || \"#\",\n    originalTitle: title,\n    category: \"Trending\",\n    tags: [\"trending\", \"india\", \"news\"]\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        -180
+      ],
+      "id": "993a74dd-98f0-4bb8-a72b-9414b9b8fdf4",
+      "name": "Enhanced Topic Selector"
+    },
+    {
+      "parameters": {
+        "url": "https://text.pollinations.ai/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messages",
+              "value": "={{[\n  {\n    \"role\": \"system\",\n    \"content\": \"You are a professional blog writer. Write engaging, informative, and SEO-friendly blog posts. Use proper markdown formatting, include relevant subheadings, and make the content valuable for readers.\"\n  },\n  {\n    \"role\": \"user\",\n    \"content\": `Write a comprehensive blog post about: ${$json.title}. \n\nContext: ${$json.description}\n\nRequirements:\n- Write 800-1200 words\n- Include an engaging introduction\n- Add 4-5 relevant subheadings with ## \n- Include practical insights and examples\n- Add a compelling conclusion\n- Use proper markdown formatting\n- Make it SEO-friendly\n- Include relevant keywords naturally\n- Write in a conversational yet professional tone\n- Focus on providing value to Indian readers`\n  }\n]}}"
+            },
+            {
+              "name": "model",
+              "value": "openai"
+            },
+            {
+              "name": "jsonMode",
+              "value": false
+            },
+            {
+              "name": "seed",
+              "value": "={{ Math.floor(Math.random() * 1000000) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -540,
+        -180
+      ],
+      "id": "29d67ba6-5ffd-4c5e-9fc2-fc73d6914b2e",
+      "name": "AI Content Generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the topic for image generation\nconst title = $node[\"Enhanced Topic Selector\"].json.title || \"trending topic\";\nconst description = $node[\"Enhanced Topic Selector\"].json.description || \"\";\n\n// Create a focused image prompt\nconst imagePrompt = `Professional blog header image for: ${title}. Modern, clean design, high quality, relevant imagery, suitable for blog post, vibrant colors, engaging composition`;\n\n// Clean the prompt for URL encoding\nconst cleanPrompt = imagePrompt.replace(/[^a-zA-Z0-9\\s,.-]/g, '').trim();\n\nreturn {\n  json: {\n    imagePrompt: cleanPrompt,\n    title: title,\n    description: description\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -180
+      ],
+      "id": "cf44eb9d-d134-4eed-9a16-8575764fe0a0",
+      "name": "Image Prompt Generator"
+    },
+    {
+      "parameters": {
+        "url": "={{'https://image.pollinations.ai/prompt/' + encodeURIComponent($json.imagePrompt) + '?width=1200&height=630&model=flux&enhance=true'}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        -180
+      ],
+      "id": "6726534d-045c-4171-9474-0ef216c12ade",
+      "name": "Featured Image Generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all the data from previous nodes\nconst topicData = $node[\"Enhanced Topic Selector\"].json;\nconst contentData = $node[\"AI Content Generator\"].json;\nconst imageData = $node[\"Image Prompt Generator\"].json;\n\n// Extract content from the AI response\nlet content = \"\";\nif (contentData.body) {\n  content = contentData.body;\n} else if (contentData.data) {\n  content = contentData.data;\n} else if (contentData.text) {\n  content = contentData.text;\n} else if (typeof contentData === 'string') {\n  content = contentData;\n} else {\n  content = JSON.stringify(contentData);\n}\n\n// Clean and format the content\nif (typeof content === 'object') {\n  content = JSON.stringify(content);\n}\n\n// Ensure content is properly formatted\nif (!content.includes('##')) {\n  content = `## Introduction\\n\\n${content}\\n\\n## Conclusion\\n\\nThis trending topic continues to capture attention across India, reflecting the dynamic nature of our digital landscape.`;\n}\n\n// Generate metadata\nconst date = new Date().toISOString().split('T')[0];\nconst slug = topicData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);\nconst filename = `${slug}.mdx`;\nconst imageFilename = `${slug}.jpg`;\n\n// Create comprehensive MDX with frontmatter\nconst mdx = `---\ntitle: \"${topicData.title}\"\ndate: \"${date}\"\ndescription: \"${topicData.description}\"\nslug: \"${slug}\"\nfeaturedImage: \"/images/blog/${imageFilename}\"\ncategory: \"${topicData.category}\"\ntags: [${topicData.tags.map(tag => `\"${tag}\"`).join(', ')}]\nauthor: \"AI Blog Assistant\"\nreadTime: \"5 min read\"\nseo:\n  metaTitle: \"${topicData.title} | Latest Trends from India\"\n  metaDescription: \"${topicData.description}\"\n  keywords: [${topicData.tags.map(tag => `\"${tag}\"`).join(', ')}]\npublished: true\n---\n\n![${topicData.title}](/images/blog/${imageFilename})\n\n${content}\n\n---\n\n*This post was generated using AI to bring you the latest trending topics from India. Stay updated with the most relevant news and discussions.*`;\n\n// Convert to Buffer for file writing\nconst buffer = Buffer.from(mdx, 'utf8');\nconst blogUrl = `https://your-blog-domain.com/blogs/${slug}`;\n\nreturn {\n  json: {\n    mdx: mdx,\n    title: topicData.title,\n    filename: filename,\n    imageFilename: imageFilename,\n    blogUrl: blogUrl,\n    description: topicData.description,\n    slug: slug,\n    contentPreview: content.substring(0, 200) + '...',\n    wordCount: content.split(' ').length,\n    tags: topicData.tags.join(', ')\n  },\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: 'text/markdown',\n      fileName: filename\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        -180
+      ],
+      "id": "042b12ac-bf71-4e36-ae34-65569ef2ff83",
+      "name": "Enhanced MDX Formatter"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/ai-blog/content/blogs/{{$json[\"filename\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        340,
+        -180
+      ],
+      "id": "379e7835-cd56-419e-92a3-dcdd2f57cc9f",
+      "name": "Blog File Writer"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/ai-blog/public/images/blog/{{$json[\"imageFilename\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        340,
+        20
+      ],
+      "id": "7dc4dd00-0a69-4468-8f0e-ecbbeafe1722",
+      "name": "Image File Writer"
+    },
+    {
+      "parameters": {
+        "chatId": "-1002748276323",
+        "text": "🚀 **New AI Blog Post Published!**\n\n📰 **{{$node[\"Enhanced MDX Formatter\"].json.title}}**\n\n📝 *{{$node[\"Enhanced MDX Formatter\"].json.description}}*\n\n📊 **Stats:**\n• Word Count: {{$node[\"Enhanced MDX Formatter\"].json.wordCount}} words\n• Tags: {{$node[\"Enhanced MDX Formatter\"].json.tags}}\n• Featured Image: ✅ Generated\n\n📖 **Preview:**\n{{$node[\"Enhanced MDX Formatter\"].json.contentPreview}}\n\n🔗 **Read Full Post:** {{$node[\"Enhanced MDX Formatter\"].json.blogUrl}}\n\n🏷️ #AIBlog #TrendingIndia #AutomatedContent #BlogPost",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        -180
+      ],
+      "id": "7fdd0789-bda0-4cec-900c-05ea0b6a8578",
+      "name": "Enhanced Telegram Notification",
+      "webhookId": "2c26d8f9-3006-4925-82d8-ed7d78f03567",
+      "credentials": {
+        "telegramApi": {
+          "id": "Huz8UHwRbYqsNIOE",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error handling and logging\nconst errors = [];\nconst warnings = [];\n\n// Check if content was generated properly\nif (!$node[\"AI Content Generator\"].json || Object.keys($node[\"AI Content Generator\"].json).length === 0) {\n  errors.push(\"Content generation failed\");\n}\n\n// Check if image was generated\nif (!$node[\"Featured Image Generator\"].binary) {\n  warnings.push(\"Image generation may have failed\");\n}\n\n// Log results\nconsole.log('Workflow Execution Summary:', {\n  topic: $node[\"Enhanced Topic Selector\"].json.title,\n  contentGenerated: !!$node[\"AI Content Generator\"].json,\n  imageGenerated: !!$node[\"Featured Image Generator\"].binary,\n  errors: errors,\n  warnings: warnings\n});\n\nreturn {\n  json: {\n    status: errors.length > 0 ? 'error' : 'success',\n    errors: errors,\n    warnings: warnings,\n    summary: {\n      topic: $node[\"Enhanced Topic Selector\"].json.title,\n      contentGenerated: !!$node[\"AI Content Generator\"].json,\n      imageGenerated: !!$node[\"Featured Image Generator\"].binary\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        20
+      ],
+      "id": "878e0fac-c2ea-440b-9c2d-0fef4c75fd01",
+      "name": "Workflow Logger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Topic Selector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Topic Selector": {
+      "main": [
+        [
+          {
+            "node": "AI Content Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Content Generator": {
+      "main": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Prompt Generator": {
+      "main": [
+        [
+          {
+            "node": "Featured Image Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Featured Image Generator": {
+      "main": [
+        [
+          {
+            "node": "Enhanced MDX Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced MDX Formatter": {
+      "main": [
+        [
+          {
+            "node": "Blog File Writer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Image File Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog File Writer": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image File Writer": {
+      "main": [
+        [
+          {
+            "node": "Workflow Logger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6325cde1-cfe6-49e1-960e-809eacab3002",
+  "meta": {
+    "instanceId": "0418bad43f1419d5152458657b142dcd75feebaabc68e0ccb6dea24c1eb2929f"
+  },
+  "id": "thr6NnXAXb6qJriH",
+  "tags": []
+}

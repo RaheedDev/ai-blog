@@ -31,12 +31,12 @@ export async function getBlogPosts(limit?: number): Promise<BlogPost[]> {
         const fileContents = fs.readFileSync(fullPath, 'utf8')
         const { data, content } = matter(fileContents)
 
-        // Handle image URL - check if it's a local image from n8n workflow
-        let imageUrl = data.imageUrl || '';
-        if (data.imageUrl && data.imageUrl.startsWith('/images/blog/')) {
-          imageUrl = data.imageUrl; // Already correct path
-        } else if (data.imageUrl && !data.imageUrl.startsWith('http')) {
-          imageUrl = `/images/blog/${data.imageUrl}`; // Add path prefix
+        // Handle image URL - check multiple possible fields from workflow
+        let imageUrl = data.imageUrl || data.featuredImage || '';
+        if (imageUrl && imageUrl.startsWith('/images/blog/')) {
+          imageUrl = imageUrl; // Already correct path
+        } else if (imageUrl && !imageUrl.startsWith('http')) {
+          imageUrl = `/images/blog/${imageUrl}`; // Add path prefix
         }
 
         return {
@@ -74,12 +74,12 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
     const fileContents = fs.readFileSync(fullPath, 'utf8')
     const { data, content } = matter(fileContents)
 
-    // Handle image URL - check if it's a local image from n8n workflow
-    let imageUrl = data.imageUrl || '';
-    if (data.imageUrl && data.imageUrl.startsWith('/images/blog/')) {
-      imageUrl = data.imageUrl; // Already correct path
-    } else if (data.imageUrl && !data.imageUrl.startsWith('http')) {
-      imageUrl = `/images/blog/${data.imageUrl}`; // Add path prefix
+    // Handle image URL - check multiple possible fields from workflow
+    let imageUrl = data.imageUrl || data.featuredImage || '';
+    if (imageUrl && imageUrl.startsWith('/images/blog/')) {
+      imageUrl = imageUrl; // Already correct path
+    } else if (imageUrl && !imageUrl.startsWith('http')) {
+      imageUrl = `/images/blog/${imageUrl}`; // Add path prefix
     }
 
     return {

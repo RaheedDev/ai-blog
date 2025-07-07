@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       tags, 
       slug,
       imageUrl,
+      featuredImage,
       readTime 
     } = blogData
     
@@ -52,6 +53,22 @@ export async function POST(request: NextRequest) {
       fs.mkdirSync(postsDirectory, { recursive: true })
     }
 
+    // Clean content - remove HTML document structure if present
+    let cleanContent = content;
+    if (content.includes('<!DOCTYPE html>')) {
+      // Extract only the content between body tags or use a simple text extraction
+      const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) {
+        cleanContent = bodyMatch[1].replace(/<[^>]*>/g, '').trim();
+      } else {
+        // Fallback: remove all HTML tags
+        cleanContent = content.replace(/<[^>]*>/g, '').trim();
+      }
+    }
+
+    // Handle image URL from either field
+    const finalImageUrl = imageUrl || featuredImage || '';
+
     // Create frontmatter
     const frontmatter = `---
 title: "${title}"
@@ -59,10 +76,10 @@ description: "${description || title}"
 date: "${new Date().toISOString().split('T')[0]}"
 readTime: "${readTime || '5 min read'}"
 tags: ${JSON.stringify(tags || ['trending'])}
-imageUrl: "${imageUrl || ''}"
+imageUrl: "${finalImageUrl}"
 ---
 
-${content}`
+${cleanContent}`
 
     // Write the file
     const filePath = path.join(postsDirectory, `${finalSlug}.mdx`)
