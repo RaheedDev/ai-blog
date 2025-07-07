@@ -46,7 +46,7 @@ ${content}`
   } catch (error) {
     console.error('Error creating blog post:', error)
     return NextResponse.json(
-      { error: 'Failed to create blog post' },
+      { error: 'Failed to create blog post', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

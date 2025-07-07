@@ -1,0 +1,26 @@
+If you're still having Node.js/npm issues, try these commands in order:
+
+1. Check if Node.js is installed:
+   node --version
+   npm --version
+
+2. If not installed, install Node.js from https://nodejs.org/
+
+3. Clear npm cache and reinstall:
+   npm cache clean --force
+   rm -rf node_modules
+   rm package-lock.json
+   npm install
+
+4. Try building:
+   npm run build
+
+5. If still issues, try:
+   npm install --legacy-peer-deps
+   npm run build
+
+Common build fixes:
+- Make sure all imports are correct
+- Check for missing dependencies
+- Verify TypeScript types
+- Ensure all environment variables are set

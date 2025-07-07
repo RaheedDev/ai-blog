@@ -16,6 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://yourdomain.com'),
   title: 'TrendScope - Trending Topics & Insights',
   description: 'Discover the latest trending topics and insights. Stay updated with weekly content on technology, trends, and more.',
   keywords: 'trending topics, technology, insights, trends, news, analysis',

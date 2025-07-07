@@ -98,7 +98,7 @@ ${cleanContent}`
   } catch (error) {
     console.error('Error in webhook:', error)
     return NextResponse.json(
-      { error: 'Failed to process webhook', details: error.message },
+      { error: 'Failed to process webhook', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

@@ -110,7 +110,7 @@ export default async function BlogPage() {
                           </Link>
                         </h2>
                         
-                        <p className="text-neo-black/80 line-clamp-3">
+                        <p className="text-neo-black/80 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical'}}>
                           {post.description}
                         </p>
                         

@@ -98,10 +98,10 @@ export default async function Home() {
             {latestPosts.map((post, index) => (
               <article key={post.slug} className="neo-card neo-card-hover">
                 <div className={`h-2 ${index === 0 ? 'bg-neo-pink' : index === 1 ? 'bg-neo-cyan' : 'bg-neo-yellow'} mb-4`} />
-                <h3 className="font-bold text-xl mb-3 line-clamp-2">
+                <h3 className="font-bold text-xl mb-3 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>
                   {post.title}
                 </h3>
-                <p className="text-neo-black/80 mb-4 line-clamp-3">
+                <p className="text-neo-black/80 mb-4 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical'}}>
                   {post.description}
                 </p>
                 <div className="flex justify-between items-center text-sm text-neo-black/60 mb-4">
